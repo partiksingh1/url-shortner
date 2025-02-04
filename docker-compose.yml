@@ -1,37 +1,30 @@
-version: '3.8'  # Docker Compose version
+version: '3.8'
 
 services:
-  app:  # Our Go application service
-    build: .  # Builds using the Dockerfile in current directory
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: urlshortener
     ports:
-      - "8080:8080"  # Maps host port 8080 to container port 8080
-    depends_on:
-      - db  # Ensures database starts before the app
-    environment:  # Environment variables for the app
-      - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=urlshortener
-      - DB_PORT=5432
-    networks:
-      - url-shortener-network  # Connects to our custom network
-
-  db:  # PostgreSQL database service
-    image: postgres:13  # Uses official PostgreSQL image
-    ports:
-      - "5432:5432"  # Maps host port 5432 to container port 5432
-    environment:  # Database configuration
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=urlshortener
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Persists database data
-    networks:
-      - url-shortener-network
+      - postgres_data:/var/lib/postgresql/data
 
-networks:  # Custom network for service communication
-  url-shortener-network:
-    driver: bridge
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: urlshortener
+      PORT: 8080
+    depends_on:
+      - db
 
-volumes:  # Named volume for database persistence
+volumes:
   postgres_data:

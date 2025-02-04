@@ -1,33 +1,28 @@
 package config
 
 import (
-	"fmt"
 	"os"
 )
 
 type DBConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
+	DSN string
 }
 
+// GetDBConfig now returns a DBConfig with the full connection URL
 func GetDBConfig() *DBConfig {
-	return &DBConfig{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "urlshortener"),
+	// Fetch the PostgreSQL URL from environment variable
+	// For local development, you can set it in your .env file
+	url := getEnv("DATABASE_URL", "")
+
+	// If the DATABASE_URL is empty, return an error (you can decide what to do here)
+	if url == "" {
+		panic("DATABASE_URL is not set!")
 	}
+
+	return &DBConfig{DSN: url}
 }
 
-func (config *DBConfig) GetDSN() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.User, config.Password, config.DBName)
-}
-
+// getEnv fetches the environment variable or returns the default value if not set
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {

@@ -11,8 +11,12 @@ type URLRepository struct {
 	db *gorm.DB
 }
 
-func NewURLRepository(db *gorm.DB) *URLRepository {
-	return &URLRepository{db: db}
+// Update NewURLRepository to accept *gorm.DB as an argument
+func NewURLRepository(db *gorm.DB) (*URLRepository, error) {
+	if db == nil {
+		return nil, errors.New("database connection is nil")
+	}
+	return &URLRepository{db: db}, nil
 }
 
 func (r *URLRepository) Create(url *models.URL) error {

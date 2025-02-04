@@ -16,26 +16,31 @@ import (
 )
 
 func main() {
+	// Load environment variables from .env file (if exists)
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Error loading .env file: %v", err)
 	}
 
-	// Initialize database
+	// Initialize database connection
 	db, err := initDB()
 	if err != nil {
-		log.Fatalf("Could not connect to database: %v", err)
+		log.Fatalf("Could not connect to the database: %v", err)
 	}
+	// Perform automatic migration
 	db.AutoMigrate(&models.URL{})
 
-	// Initialize router
+	// Initialize the router
 	r := mux.NewRouter()
 
-	// Setup routes
+	// Setup application routes
 	routes.SetupRoutes(r, db)
 
-	// Configure CORS
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:5173"}, // Add your frontend URLs
+	// Configure CORS settings
+	corsOptions := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			"http://localhost:3000", // React app frontend (can be adjusted)
+			"http://localhost:5173", // Vite or other frontends
+		},
 		AllowedMethods: []string{
 			http.MethodGet,
 			http.MethodPost,
@@ -52,13 +57,13 @@ func main() {
 		},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300, // Cache pre-flight request for 5 minutes
 	})
 
-	// Create a handler with CORS middleware
-	handler := c.Handler(r)
+	// Apply CORS middleware to the router
+	handler := corsOptions.Handler(r)
 
-	// Start server
+	// Get the server port from the environment variable (default to 8080)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -68,14 +73,17 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
 
+// initDB initializes the database connection using the configuration.
 func initDB() (*gorm.DB, error) {
-	config := config.GetDBConfig()
-	dsn := config.GetDSN()
+	// Get the database configuration (DSN URL from environment variable)
+	dbConfig := config.GetDBConfig()
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Use the PostgreSQL connection URL (DSN)
+	db, err := gorm.Open(postgres.Open(dbConfig.DSN), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
+	// Return the database connection object
 	return db, nil
 }
